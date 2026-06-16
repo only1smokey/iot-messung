@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Umweltmessung</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Umweltmessung</h1>
+
+      <div class="header-right">
+        <div class="status">
+          <span class="status-dot" id="statusDot"></span>
+          <span id="connectionStatus">Verbindung wird hergestellt</span>
+        </div>
+
+        <button id="clearButton" type="button">Clear DB</button>
+      </div>
+    </header>
+
+    <section class="cards">
+      <article class="card">
+        <span class="label">Temperatur</span>
+        <strong><span id="temperature">--</span> <small>°C</small></strong>
+        <span class="rating" id="temperatureRating">Keine Daten</span>
+      </article>
+
+      <article class="card">
+        <span class="label">Luftfeuchtigkeit</span>
+        <strong><span id="humidity">--</span> <small>%</small></strong>
+        <span class="rating" id="humidityRating">Keine Daten</span>
+      </article>
+
+      <article class="card">
+        <span class="label">Luftdruck</span>
+        <strong><span id="pressure">--</span> <small>hPa</small></strong>
+        <span class="rating" id="pressureRating">Keine Daten</span>
+      </article>
+    </section>
+
+    <section class="chart-box">
+      <div class="chart-header">
+        <div>
+          <h2>Messverlauf</h2>
+          <span id="lastUpdate">Noch keine Messung</span>
+        </div>
+
+        <div class="legend">
+          <span class="temp">Temperatur</span>
+          <span class="hum">Feuchtigkeit</span>
+          <span class="press">Luftdruck</span>
+        </div>
+      </div>
+
+      <div id="chart"></div>
+    </section>
+
+    <section class="error" id="errorBox">
+      <strong>Datenbankfehler:</strong>
+      <span id="errorText"></span>
+    </section>
+  </main>
+
+  <script src="/script.js"></script>
+</body>
+</html>
