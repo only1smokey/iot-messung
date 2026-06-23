@@ -1,4 +1,4 @@
-# run: python simple_manual_script\auswertung.py
+# run here in this folder: python auswertung.py
 
 import sys
 import time

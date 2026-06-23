@@ -1,11 +1,25 @@
 import os
 from pathlib import Path
 
-from dotenv import load_dotenv
 from mysql.connector import connect
 
-# env file here
-load_dotenv(Path(__file__).resolve().with_name(".env"))
+
+def load_env():
+    # read env file simple
+    env_file = Path(__file__).resolve().with_name(".env")
+
+    if not env_file.exists():
+        return
+
+    for line in env_file.read_text().splitlines():
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+
+        key, value = line.split("=", 1)
+        os.environ.setdefault(key.strip(), value.strip())
+
+
+load_env()
 
 DB_HOST = os.getenv("DB_HOST", "127.0.0.1")
 DB_PORT = int(os.getenv("DB_PORT", "3306"))
