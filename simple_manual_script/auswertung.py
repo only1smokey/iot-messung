@@ -3,137 +3,79 @@
 
 import sys
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 
-try:
-    from rich.console import Console
-    from rich.panel import Panel
-    from rich.table import Table
-except ImportError:
-    print("Rich fehlt. Install: sudo apt install python3-rich")
-    raise SystemExit(1)
+from rich.console import Console
+from rich.table import Table
 
 project_dir = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(project_dir))
 
 # use same db code like website
-from db import get_averages, get_readings
+from db import get_readings
 
 console = Console()
 
-METRICS = [
-    ("Temperatur", "temperature", "C"),
-    ("Feuchtigkeit", "humidity", "%"),
-    ("Luftdruck", "pressure", "hPa"),
-]
 
-
-def average(rows, key):
-    # average make
+def average(rows, name):
+    # make average
     if not rows:
-        return None
-
-    return sum(row[key] for row in rows) / len(rows)
-
-
-def show_number(value, unit):
-    # number pretty
-    if value is None:
         return "--"
 
-    return f"{value:.2f} {unit}"
+    value = sum(row[name] for row in rows) / len(rows)
+    return f"{value:.2f}"
 
 
-def trend(rows, key):
-    # old half vs new half
-    if len(rows) < 2:
-        return "--"
-
-    middle = len(rows) // 2
-    old = average(rows[:middle], key)
-    new = average(rows[middle:], key)
-    diff = new - old
-
-    if abs(diff) < 0.05:
-        return "same"
-    if diff > 0:
-        return f"up +{diff:.2f}"
-    return f"down {diff:.2f}"
+def hour(row):
+    # get hour from db time
+    return datetime.fromisoformat(row["created_at"]).hour
 
 
-def parse_time(row):
-    # text time to real time
-    return datetime.fromisoformat(row["created_at"])
+def rows_between(readings, start, end):
+    # get rows from clock time
+    return [row for row in readings if start <= hour(row) < end]
 
 
-def add_average_row(table, name, rows):
-    values = [show_number(average(rows, key), unit) for _, key, unit in METRICS]
-    table.add_row(name, str(len(rows)), *values)
+def add_row(table, name, rows):
+    # add one table row
+    table.add_row(
+        name,
+        str(len(rows)),
+        average(rows, "temperature"),
+        average(rows, "humidity"),
+        average(rows, "pressure"),
+    )
 
 
-def build_average_table(all_average, readings):
+def show_report():
+    # get db data
+    readings = get_readings(200)
+
+    console.clear()
     table = Table(title="Auswertung")
     table.add_column("Bereich")
     table.add_column("Anzahl")
-    table.add_column("Temperatur")
-    table.add_column("Feuchtigkeit")
-    table.add_column("Luftdruck")
+    table.add_column("Temperatur C")
+    table.add_column("Feuchtigkeit %")
+    table.add_column("Luftdruck hPa")
 
-    if all_average:
-        table.add_row(
-            "Alle Daten",
-            str(all_average["count"]),
-            show_number(all_average["temperature"], "C"),
-            show_number(all_average["humidity"], "%"),
-            show_number(all_average["pressure"], "hPa"),
-        )
+    add_row(table, "Alle geladen", readings)
+    add_row(table, "Letzte 5 Eintraege", readings[-5:])
+    add_row(table, "Letzte 10 Eintraege", readings[-10:])
 
-    for amount in (5, 10, 30):
-        add_average_row(table, f"Letzte {amount}", readings[-amount:])
+    add_row(table, "Nacht 00-06", rows_between(readings, 0, 6))
+    add_row(table, "Morgen 06-12", rows_between(readings, 6, 12))
+    add_row(table, "Mittag 12-18", rows_between(readings, 12, 18))
+    add_row(table, "Abend 18-24", rows_between(readings, 18, 24))
 
-    if readings:
-        newest_time = parse_time(readings[-1])
-
-        for minutes, label in ((15, "Letzte 15 min"), (60, "Letzte 1 h"), (1440, "Letzte 24 h")):
-            start_time = newest_time - timedelta(minutes=minutes)
-            rows = [row for row in readings if parse_time(row) >= start_time]
-            add_average_row(table, label, rows)
-
-    return table
-
-
-def build_trend_table(readings):
-    table = Table(title="Trend")
-    table.add_column("Wert")
-    table.add_column("Richtung")
-
-    for name, key, _ in METRICS:
-        table.add_row(name, trend(readings, key))
-
-    return table
-
-
-def print_report():
-    # ask db stuff
-    readings = get_readings(200)
-    all_average = get_averages()
-
-    console.clear()
-    console.print(Panel("Auswertung laeuft. Stop mit STRG+C.", title="Manual Script"))
-
-    if not readings:
-        console.print("Keine Messwerte in der Datenbank.")
-        return
-
-    console.print(build_average_table(all_average, readings))
-    console.print(build_trend_table(readings))
+    console.print(table)
 
 
 def main():
-    # forever show report
+    # forever show table
     while True:
-        print_report()
+        show_report()
         time.sleep(5)
 
 
