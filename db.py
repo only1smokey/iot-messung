@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-from mysql.connector import connect
+import pymysql
 
 
 def load_env():
@@ -31,13 +31,14 @@ DB_TABLE = os.getenv("DB_TABLE", "sensor_data")
 
 def connect_db():
     # db open
-    return connect(
+    return pymysql.connect(
         host=DB_HOST,
         port=DB_PORT,
         user=DB_USER,
         password=DB_PASSWORD,
         database=DB_NAME,
         connection_timeout=5,
+        cursorclass=pymysql.cursors.DictCursor,
     )
 
 
@@ -49,7 +50,7 @@ def number(value):
 def get_readings(limit=60):
     # get last sensor stuff
     connection = connect_db()
-    cursor = connection.cursor(dictionary=True)
+    cursor = connection.cursor()
 
     try:
         cursor.execute(
@@ -82,7 +83,7 @@ def get_readings(limit=60):
 def get_averages():
     # get average sensor stuff
     connection = connect_db()
-    cursor = connection.cursor(dictionary=True)
+    cursor = connection.cursor()
 
     try:
         cursor.execute(
