@@ -1,9 +1,11 @@
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
-from mysql.connector import pooling
+from mysql.connector import connect
 
-load_dotenv()
+# env file here
+load_dotenv(Path(__file__).resolve().with_name(".env"))
 
 DB_HOST = os.getenv("DB_HOST", "127.0.0.1")
 DB_PORT = int(os.getenv("DB_PORT", "3306"))
@@ -12,21 +14,27 @@ DB_PASSWORD = os.getenv("DB_PASSWORD", "")
 DB_NAME = os.getenv("DB_NAME", "iot_db")
 DB_TABLE = os.getenv("DB_TABLE", "sensor_data")
 
-pool = pooling.MySQLConnectionPool(
-    pool_name="sensor_pool",
-    pool_size=5,
-    pool_reset_session=True,
-    host=DB_HOST,
-    port=DB_PORT,
-    user=DB_USER,
-    password=DB_PASSWORD,
-    database=DB_NAME,
-    connection_timeout=5,
-)
+
+def connect_db():
+    # db open
+    return connect(
+        host=DB_HOST,
+        port=DB_PORT,
+        user=DB_USER,
+        password=DB_PASSWORD,
+        database=DB_NAME,
+        connection_timeout=5,
+    )
+
+
+def number(value):
+    # make number nice
+    return round(float(value), 2)
 
 
 def get_readings(limit=60):
-    connection = pool.get_connection()
+    # get last sensor stuff
+    connection = connect_db()
     cursor = connection.cursor(dictionary=True)
 
     try:
@@ -45,9 +53,9 @@ def get_readings(limit=60):
         return [
             {
                 "id": int(row["id"]),
-                "temperature": round(float(row["temperature"]), 2),
-                "humidity": round(float(row["humidity"]), 2),
-                "pressure": round(float(row["pressure"]), 2),
+                "temperature": number(row["temperature"]),
+                "humidity": number(row["humidity"]),
+                "pressure": number(row["pressure"]),
                 "created_at": row["created_at"].isoformat(timespec="seconds"),
             }
             for row in rows
@@ -57,8 +65,42 @@ def get_readings(limit=60):
         connection.close()
 
 
+def get_averages():
+    # get average sensor stuff
+    connection = connect_db()
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+        cursor.execute(
+            f"""
+            SELECT
+                COUNT(*) AS count,
+                AVG(temperature) AS temperature,
+                AVG(humidity) AS humidity,
+                AVG(pressure) AS pressure
+            FROM `{DB_TABLE}`
+            """
+        )
+
+        row = cursor.fetchone()
+
+        if not row or row["count"] == 0:
+            return None
+
+        return {
+            "count": int(row["count"]),
+            "temperature": number(row["temperature"]),
+            "humidity": number(row["humidity"]),
+            "pressure": number(row["pressure"]),
+        }
+    finally:
+        cursor.close()
+        connection.close()
+
+
 def clear_database():
-    connection = pool.get_connection()
+    # delete all sensor stuff
+    connection = connect_db()
     cursor = connection.cursor()
 
     try:

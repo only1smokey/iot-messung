@@ -109,6 +109,7 @@ button:disabled {
 }
 
 .card,
+.average-box,
 .chart-box,
 .error {
   background: var(--surface);
@@ -118,6 +119,24 @@ button:disabled {
 
 .card {
   padding: 20px;
+}
+
+.average-box {
+  margin-bottom: 16px;
+  padding: 18px 20px;
+}
+
+.average-values {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.average-values strong {
+  color: var(--text);
 }
 
 .label,

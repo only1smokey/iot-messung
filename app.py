@@ -2,7 +2,7 @@ from pathlib import Path
 
 from flask import Flask, jsonify, send_from_directory
 
-from db import clear_database, get_readings
+from db import clear_database, get_averages, get_readings
 
 app = Flask(__name__)
 base_dir = Path(__file__).resolve().parent
@@ -10,6 +10,7 @@ base_dir = Path(__file__).resolve().parent
 
 @app.get("/")
 def index():
+    # show website
     return send_from_directory(base_dir, "index.html")
 
 
@@ -25,10 +26,12 @@ def script():
 
 @app.get("/api/readings")
 def readings():
+    # website ask data here
     try:
         data = get_readings()
         return jsonify(
             ok=True,
+            averages=get_averages(),
             latest=data[-1] if data else None,
             readings=data,
         )
@@ -38,6 +41,7 @@ def readings():
 
 @app.post("/api/clear")
 def clear():
+    # clear button use this
     try:
         deleted = clear_database()
         return jsonify(ok=True, deleted=deleted)

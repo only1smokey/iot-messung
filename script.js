@@ -32,12 +32,36 @@ const refreshTime = 2000;
         connected ? "true" : "false";
     }
 
+    function setAverages(averages) {
+      // put average on page
+      if (!averages) {
+        document.getElementById("avgTemperature").textContent = "--";
+        document.getElementById("avgHumidity").textContent = "--";
+        document.getElementById("avgPressure").textContent = "--";
+        document.getElementById("avgCount").textContent = "Keine Daten";
+        return;
+      }
+
+      document.getElementById("avgTemperature").textContent =
+        Number(averages.temperature).toFixed(1);
+
+      document.getElementById("avgHumidity").textContent =
+        Number(averages.humidity).toFixed(1);
+
+      document.getElementById("avgPressure").textContent =
+        Number(averages.pressure).toFixed(1);
+
+      document.getElementById("avgCount").textContent =
+        `${averages.count} Messwerte`;
+    }
+
     function clearPage() {
       lastReading = "";
 
       document.getElementById("temperature").textContent = "--";
       document.getElementById("humidity").textContent = "--";
       document.getElementById("pressure").textContent = "--";
+      setAverages(null);
 
       setRating("temperatureRating", "Keine Daten", "muted");
       setRating("humidityRating", "Keine Daten", "muted");
@@ -157,6 +181,7 @@ const refreshTime = 2000;
     }
 
     async function loadData() {
+      // ask flask for data
       try {
         const response = await fetch("/api/readings", {cache: "no-store"});
         const data = await response.json();
@@ -167,6 +192,7 @@ const refreshTime = 2000;
 
         setConnection(true);
         document.getElementById("errorBox").style.display = "none";
+        setAverages(data.averages);
 
         if (!data.latest) {
           clearPage();
@@ -207,6 +233,7 @@ const refreshTime = 2000;
     }
 
     async function clearDatabase() {
+      // user click clear db
       if (!confirm("Alle Messwerte aus der Datenbank löschen?")) {
         return;
       }
